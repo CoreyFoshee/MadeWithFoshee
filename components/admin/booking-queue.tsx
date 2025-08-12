@@ -1,6 +1,6 @@
 "use client"
 
-import { useFormStatus } from "react-dom"
+import { useState } from "react"
 import { approveBooking, denyBooking } from "@/app/actions/admin-actions"
 import { BrandCard } from "@/components/ui/brand-card"
 import { Button } from "@/components/ui/button"
@@ -24,11 +24,29 @@ interface BookingQueueProps {
 }
 
 function ApproveButton({ bookingId }: { bookingId: string }) {
-  const { pending } = useFormStatus()
+  const [isApproving, setIsApproving] = useState(false)
+
+  const handleApprove = async () => {
+    setIsApproving(true)
+    try {
+      await approveBooking(bookingId)
+      // Optionally refresh the page or update state
+      window.location.reload()
+    } catch (error) {
+      console.error('Error approving booking:', error)
+    } finally {
+      setIsApproving(false)
+    }
+  }
 
   return (
-    <Button type="submit" disabled={pending} className="bg-green-600 hover:bg-green-700 text-white">
-      {pending ? (
+    <Button 
+      type="button" 
+      disabled={isApproving} 
+      className="bg-green-600 hover:bg-green-700 text-white"
+      onClick={handleApprove}
+    >
+      {isApproving ? (
         <>
           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           Approving...
@@ -44,16 +62,30 @@ function ApproveButton({ bookingId }: { bookingId: string }) {
 }
 
 function DenyButton({ bookingId }: { bookingId: string }) {
-  const { pending } = useFormStatus()
+  const [isDenying, setIsDenying] = useState(false)
+
+  const handleDeny = async () => {
+    setIsDenying(true)
+    try {
+      await denyBooking(bookingId)
+      // Optionally refresh the page or update state
+      window.location.reload()
+    } catch (error) {
+      console.error('Error denying booking:', error)
+    } finally {
+      setIsDenying(false)
+    }
+  }
 
   return (
     <Button
-      type="submit"
-      disabled={pending}
+      type="button"
+      disabled={isDenying}
       variant="outline"
       className="border-red-200 text-red-600 hover:bg-red-50 bg-transparent"
+      onClick={handleDeny}
     >
-      {pending ? (
+      {isDenying ? (
         <>
           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           Denying...
