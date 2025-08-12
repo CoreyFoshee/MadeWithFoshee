@@ -4,27 +4,49 @@ import { initializeFirestore, clearAllData } from '@/lib/firebase/admin-database
 export async function POST(request: NextRequest) {
   try {
     const { action } = await request.json()
-    
+
     if (action === 'init') {
       console.log('🚀 Initializing Firestore...')
-      await initializeFirestore()
-      return NextResponse.json({ success: true, message: 'Firestore initialized successfully' })
+      const result = await initializeFirestore()
+      
+      if (result.success) {
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Firestore initialized successfully' 
+        })
+      } else {
+        return NextResponse.json({ 
+          success: false, 
+          error: result.error 
+        }, { status: 500 })
+      }
+    } else if (action === 'clear') {
+      console.log('🧹 Clearing Firestore data...')
+      const result = await clearAllData()
+      
+      if (result.success) {
+        return NextResponse.json({ 
+          success: true, 
+          message: 'All data cleared successfully' 
+        })
+      } else {
+        return NextResponse.json({ 
+          success: false, 
+          error: result.error 
+        }, { status: 500 })
+      }
+    } else {
+      return NextResponse.json({ 
+        success: false, 
+        error: 'Invalid action. Use "init" or "clear"' 
+      }, { status: 400 })
     }
-    
-    if (action === 'clear') {
-      console.log('🗑️ Clearing Firestore data...')
-      await clearAllData()
-      return NextResponse.json({ success: true, message: 'All data cleared successfully' })
-    }
-    
-    return NextResponse.json({ success: false, message: 'Invalid action. Use "init" or "clear"' })
-    
   } catch (error) {
-    console.error('❌ Error in admin API:', error)
-    return NextResponse.json(
-      { success: false, message: 'Failed to perform action', error: error.message },
-      { status: 500 }
-    )
+    console.error('❌ Error in init-firestore API:', error)
+    return NextResponse.json({ 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    }, { status: 500 })
   }
 }
 
