@@ -1,11 +1,11 @@
 "use client"
-import { useFormStatus } from "react-dom"
-import { createBooking } from "@/app/actions/booking-actions"
+import { useState } from "react"
+import { createBooking } from "@/lib/firebase/database"
 import { BrandCard } from "@/components/ui/brand-card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Calendar, Users, MessageSquare, Loader2 } from "lucide-react"
+import { Calendar, Users, MessageSquare, Loader2, CheckCircle, AlertCircle } from "lucide-react"
 import { format } from "date-fns"
 import Link from "next/link"
 
@@ -25,31 +25,89 @@ interface BookingFormProps {
   initialNotes?: string
 }
 
-function SubmitButton() {
-  const { pending } = useFormStatus()
-
-  return (
-    <Button
-      type="submit"
-      disabled={pending}
-      className="w-full bg-fos-primary hover:bg-fos-primary-dark text-white py-3 text-lg"
-    >
-      {pending ? (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          Submitting Request...
-        </>
-      ) : (
-        "Submit Booking Request"
-      )}
-    </Button>
-  )
-}
-
 export default function BookingForm({ listing, fromDate, toDate, guestCount, initialNotes }: BookingFormProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
+  const [errorMessage, setErrorMessage] = useState('')
+  const [notes, setNotes] = useState(initialNotes ? decodeURIComponent(initialNotes) : '')
+
   const startDate = new Date(fromDate)
   const endDate = new Date(toDate)
   const nights = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    setSubmitStatus('idle')
+    setErrorMessage('')
+
+    try {
+      // Validate dates
+      if (startDate >= endDate) {
+        throw new Error('End date must be after start date')
+      }
+
+      if (startDate < new Date()) {
+        throw new Error('Start date cannot be in the past')
+      }
+
+      // Validate minimum nights
+      if (nights < listing.min_nights) {
+        throw new Error(`Minimum stay is ${listing.min_nights} nights`)
+      }
+
+      // Validate guests
+      const guests = parseInt(guestCount || '2')
+      if (guests > listing.max_guests) {
+        throw new Error(`Maximum ${listing.max_guests} guests allowed`)
+      }
+
+      // Create booking data
+      const bookingData = {
+        listing_id: listing.id,
+        user_id: 'local-dev-user', // For local development
+        start_date: fromDate,
+        end_date: toDate,
+        guests,
+        notes,
+        status: 'pending'
+      }
+
+      // Submit to Firebase
+      const result = await createBooking(bookingData)
+      
+      setSubmitStatus('success')
+      console.log('Booking created successfully:', result)
+      
+    } catch (error) {
+      setSubmitStatus('error')
+      setErrorMessage(error instanceof Error ? error.message : 'An unexpected error occurred')
+      console.error('Booking error:', error)
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  if (submitStatus === 'success') {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <BrandCard>
+          <div className="text-center space-y-4">
+            <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
+            <h1 className="text-3xl font-serif font-bold text-fos-neutral-deep">Booking Request Submitted!</h1>
+            <p className="text-fos-neutral">Thank you for your booking request. We'll review it and get back to you soon.</p>
+            <div className="pt-4">
+              <Link href="/my-trips">
+                <Button className="bg-fos-primary hover:bg-fos-primary-dark text-white">
+                  View My Bookings
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </BrandCard>
+      </div>
+    )
+  }
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
@@ -59,6 +117,16 @@ export default function BookingForm({ listing, fromDate, toDate, guestCount, ini
           <h1 className="text-3xl font-serif font-bold text-fos-neutral-deep mb-2">Request Your Stay</h1>
           <p className="text-fos-neutral">Review your booking details and submit your request</p>
         </div>
+
+        {/* Error Message */}
+        {submitStatus === 'error' && (
+          <BrandCard>
+            <div className="flex items-center gap-3 text-red-600">
+              <AlertCircle className="h-5 w-5" />
+              <p className="font-medium">{errorMessage}</p>
+            </div>
+          </BrandCard>
+        )}
 
         {/* Booking Summary */}
         <BrandCard>
@@ -95,13 +163,7 @@ export default function BookingForm({ listing, fromDate, toDate, guestCount, ini
 
         {/* Booking Form */}
         <BrandCard>
-          <form action={createBooking} className="space-y-6">
-            {/* Hidden fields */}
-            <input type="hidden" name="listingId" value={listing.id} />
-            <input type="hidden" name="startDate" value={fromDate} />
-            <input type="hidden" name="endDate" value={toDate} />
-            <input type="hidden" name="guests" value={guestCount || "2"} />
-
+          <form onSubmit={handleSubmit} className="space-y-6">
             {/* Special Requests */}
             <div className="space-y-2">
               <Label htmlFor="notes" className="flex items-center gap-2 text-fos-neutral-deep">
@@ -110,9 +172,9 @@ export default function BookingForm({ listing, fromDate, toDate, guestCount, ini
               </Label>
               <Textarea
                 id="notes"
-                name="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
                 placeholder="Any special requests, dietary restrictions, or additional information..."
-                defaultValue={initialNotes ? decodeURIComponent(initialNotes) : ""}
                 className="bg-white border-fos-neutral-light resize-none"
                 rows={4}
               />
@@ -123,27 +185,27 @@ export default function BookingForm({ listing, fromDate, toDate, guestCount, ini
 
             {/* Terms */}
             <div className="bg-fos-neutral-light/50 p-4 rounded-lg">
-              <h3 className="font-medium text-fos-neutral-deep mb-2">Booking Terms</h3>
-              <ul className="text-sm text-fos-neutral space-y-1">
-                <li>• Your booking request will be reviewed by the property owner</li>
-                <li>• You will receive an email confirmation once approved</li>
-                <li>• Minimum stay: {listing.min_nights} nights</li>
-                <li>• Maximum guests: {listing.max_guests}</li>
-                <li>• Check-in: 4:00 PM, Check-out: 11:00 AM</li>
-              </ul>
+              <p className="text-sm text-fos-neutral">
+                By submitting this booking request, you agree to our terms and conditions. 
+                This is a request only and will be confirmed upon approval.
+              </p>
             </div>
 
-            <SubmitButton />
-
-            <div className="text-center">
-              <Button
-                asChild
-                variant="outline"
-                className="border-fos-neutral text-fos-neutral hover:bg-fos-neutral-light bg-transparent"
-              >
-                <Link href="/place">Back to Property</Link>
-              </Button>
-            </div>
+            {/* Submit Button */}
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full bg-fos-primary hover:bg-fos-primary-dark text-white py-3 text-lg"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting Request...
+                </>
+              ) : (
+                "Submit Booking Request"
+              )}
+            </Button>
           </form>
         </BrandCard>
       </div>

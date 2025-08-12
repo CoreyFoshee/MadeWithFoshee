@@ -54,6 +54,20 @@ const sampleSiteSettings = {
   updated_at: new Date()
 }
 
+// Sample booking for reference
+const sampleBooking = {
+  id: 'sample-booking-001',
+  listing_id: 'lake-house-001',
+  user_id: 'sample-user',
+  start_date: new Date('2024-12-01'),
+  end_date: new Date('2024-12-03'),
+  guests: 4,
+  notes: 'Sample booking for testing',
+  status: 'pending',
+  created_at: new Date(),
+  updated_at: new Date()
+}
+
 export async function initializeFirestore() {
   const adminDb = getAdminDb()
   
@@ -75,6 +89,10 @@ export async function initializeFirestore() {
     // Initialize site settings
     await adminDb.collection('site_settings').doc(sampleSiteSettings.id).set(sampleSiteSettings)
     console.log(`✅ Added site settings: ${sampleSiteSettings.site_name}`)
+
+    // Initialize sample booking
+    await adminDb.collection('bookings').doc(sampleBooking.id).set(sampleBooking)
+    console.log(`✅ Added sample booking: ${sampleBooking.id}`)
 
     console.log('🎉 Firestore initialization completed successfully!')
     return { success: true, message: 'Firestore initialized with sample data' }
@@ -110,6 +128,13 @@ export async function clearAllData() {
       await doc.ref.delete()
     }
     console.log('✅ Cleared site settings')
+
+    // Clear bookings
+    const bookingsSnapshot = await adminDb.collection('bookings').get()
+    for (const doc of bookingsSnapshot.docs) {
+      await doc.ref.delete()
+    }
+    console.log('✅ Cleared bookings')
 
     console.log('🎉 All data cleared successfully!')
     return { success: true, message: 'All data cleared' }

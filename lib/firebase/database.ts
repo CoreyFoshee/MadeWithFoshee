@@ -152,16 +152,24 @@ export async function getBlackoutDates() {
 // Create a new booking
 export async function createBooking(bookingData: any) {
   try {
+    console.log('Creating booking with data:', bookingData)
+    
     // Convert dates to Firestore Timestamps
     const data = {
       ...bookingData,
       start_date: Timestamp.fromDate(new Date(bookingData.start_date)),
       end_date: Timestamp.fromDate(new Date(bookingData.end_date)),
-      created_at: Timestamp.now()
+      created_at: Timestamp.now(),
+      updated_at: Timestamp.now()
     }
     
+    console.log('Processed booking data:', data)
+    
     const docRef = await addDoc(collection(db, 'bookings'), data)
-    return { id: docRef.id, ...data }
+    const result = { id: docRef.id, ...data }
+    
+    console.log('Booking created successfully:', result)
+    return result
   } catch (error) {
     console.error('Error creating booking:', error)
     throw error
