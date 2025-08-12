@@ -1,12 +1,13 @@
 "use client"
 
-import { useSearchParams, useFormStatus } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { cancelBooking } from "@/app/actions/booking-actions"
 import { BrandCard } from "@/components/ui/brand-card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Users, MessageSquare, CheckCircle, XCircle, Clock, Ban, Loader2 } from "lucide-react"
 import { format } from "date-fns"
+import { useState } from "react"
 
 interface Booking {
   id: string
@@ -26,18 +27,30 @@ interface MyTripsClientProps {
   initialBookings: Booking[]
 }
 
-function CancelButton() {
-  const { pending } = useFormStatus()
+function CancelButton({ bookingId }: { bookingId: string }) {
+  const [isCancelling, setIsCancelling] = useState(false)
+
+  const handleCancel = async () => {
+    setIsCancelling(true)
+    try {
+      await cancelBooking(bookingId)
+    } catch (error) {
+      console.error('Error cancelling booking:', error)
+    } finally {
+      setIsCancelling(false)
+    }
+  }
 
   return (
     <Button
-      type="submit"
-      disabled={pending}
+      type="button"
+      disabled={isCancelling}
       variant="outline"
       size="sm"
       className="border-red-200 text-red-600 hover:bg-red-50 bg-transparent"
+      onClick={handleCancel}
     >
-      {pending ? (
+      {isCancelling ? (
         <>
           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
           Cancelling...
@@ -181,10 +194,7 @@ export default function MyTripsClient({ initialBookings }: MyTripsClientProps) {
                     {/* Actions */}
                     {booking.status === "pending" && (
                       <div className="flex gap-2 pt-2 border-t border-fos-neutral-light">
-                        <form action={cancelBooking}>
-                          <input type="hidden" name="bookingId" value={booking.id} />
-                          <CancelButton />
-                        </form>
+                        <CancelButton bookingId={booking.id} />
                       </div>
                     )}
 
