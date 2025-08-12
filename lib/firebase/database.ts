@@ -285,10 +285,29 @@ export async function getUserProfile(userId: string) {
     
     if (querySnapshot.docs.length > 0) {
       const doc = querySnapshot.docs[0]
-      return {
+      const data = doc.data()
+      
+      // Handle both old and new profile formats
+      let profile: any = {
         id: doc.id,
-        ...doc.data()
+        ...data
       }
+      
+      // If profile has old format (full_name), convert to new format
+      if (data.full_name && !data.first_name && !data.last_name) {
+        const nameParts = data.full_name.split(' ')
+        profile = {
+          ...profile,
+          first_name: nameParts[0] || 'Default',
+          last_name: nameParts.slice(1).join(' ') || 'User'
+        }
+      }
+      
+      // Ensure we have the required fields
+      if (!profile.first_name) profile.first_name = 'Default'
+      if (!profile.last_name) profile.last_name = 'User'
+      
+      return profile
     }
     return null
   } catch (error) {

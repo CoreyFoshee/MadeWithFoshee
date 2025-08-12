@@ -143,3 +143,52 @@ export async function clearAllData() {
     return { success: false, error: error.message }
   }
 }
+
+// Create or update user profile
+export async function createOrUpdateUserProfile(userId: string, profileData: {
+  first_name: string
+  last_name: string
+  email: string
+}) {
+  try {
+    const adminDb = getAdminDb()
+    
+    // Check if profile already exists
+    const profileQuery = await adminDb.collection('profiles').where('user_id', '==', userId).get()
+    
+    if (!profileQuery.empty) {
+      // Update existing profile
+      const profileDoc = profileQuery.docs[0]
+      const existingData = profileDoc.data()
+      
+      // Handle migration from old format to new format
+      const updateData: any = {
+        ...profileData,
+        updated_at: new Date()
+      }
+      
+      // If updating from old format, remove old fields
+      if (existingData.full_name) {
+        updateData.full_name = adminDb.FieldValue.delete()
+        updateData.role = adminDb.FieldValue.delete()
+      }
+      
+      await adminDb.collection('profiles').doc(profileDoc.id).update(updateData)
+      console.log(`✅ Updated profile for user: ${userId}`)
+      return { success: true, message: 'Profile updated successfully' }
+    } else {
+      // Create new profile
+      await adminDb.collection('profiles').add({
+        user_id: userId,
+        ...profileData,
+        created_at: new Date(),
+        updated_at: new Date()
+      })
+      console.log(`✅ Created profile for user: ${userId}`)
+      return { success: true, message: 'Profile created successfully' }
+    }
+  } catch (error) {
+    console.error('Error creating/updating user profile:', error)
+    throw error
+  }
+}
