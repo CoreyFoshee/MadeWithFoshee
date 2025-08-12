@@ -36,6 +36,7 @@ This platform allows families to easily book stays at our beautiful lake house p
 - ✅ Added production setup scripts
 - ✅ Fixed Git email configuration for Vercel deployment
 - ✅ Cleaned Git configuration for proper commit author recognition
+- ✅ Fixed global Git configuration to resolve Vercel commit author issue
 
 ---
 
