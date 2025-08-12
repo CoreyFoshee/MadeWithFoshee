@@ -1,42 +1,108 @@
-# Made With Foshee
+# Made by Foshee - Lake House Booking Site
 
-A beautiful lake house booking platform built with Next.js, Firebase, and modern web technologies.
+A beautiful, modern lake house booking platform built with Next.js, Firebase, and Tailwind CSS.
 
-## 🚀 Features
+## 🚀 **Latest Updates - Firebase Integration Complete!**
+- ✅ **Full Firebase migration** from Supabase
+- ✅ **Working booking system** with admin approval workflow
+- ✅ **Real-time status updates** for bookings
+- ✅ **Admin dashboard** for managing bookings and blackout dates
+- ✅ **Responsive calendar** with date range selection
+- ✅ **All runtime errors resolved** and components working
 
-- **Beautiful Calendar Interface** - Easy date selection with vertical month scrolling
-- **Firebase Integration** - Secure authentication and real-time database
-- **Responsive Design** - Works perfectly on all devices
-- **Modern UI/UX** - Built with Tailwind CSS and Radix UI components
+## Features
 
-## 🏠 About
+- **Property Listings**: Beautiful property showcase with image galleries
+- **Smart Calendar**: Interactive date picker with availability checking
+- **Booking System**: Complete workflow from request to confirmation
+- **Admin Dashboard**: Manage bookings, blackout dates, and content
+- **User Authentication**: Secure login and user management
+- **Responsive Design**: Works perfectly on all devices
 
-This platform allows families to easily book stays at our beautiful lake house property. The calendar interface makes date selection simple and intuitive.
-
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Frontend**: Next.js 14, React 18, TypeScript
-- **Styling**: Tailwind CSS, Radix UI
-- **Backend**: Firebase (Authentication, Firestore)
+- **Styling**: Tailwind CSS, Radix UI components
+- **Database**: Firebase Firestore (NoSQL)
+- **Authentication**: Firebase Auth
 - **Deployment**: Vercel
+- **Package Manager**: pnpm
 
-## 📱 Getting Started
+## Getting Started
 
-1. Clone the repository
-2. Install dependencies: `pnpm install`
-3. Set up environment variables
-4. Run development server: `pnpm dev`
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/CoreyFoshee/MadeWithFoshee.git
+   cd MadeWithFoshee
+   ```
 
-## 🌟 Recent Updates
+2. **Install dependencies**
+   ```bash
+   pnpm install
+   ```
 
-- ✅ Fixed calendar navigation arrows
-- ✅ Implemented vertical month stacking
-- ✅ Enhanced booking panel integration
-- ✅ Fixed Firebase Admin build errors
-- ✅ Added production setup scripts
-- ✅ Fixed Git email configuration for Vercel deployment
-- ✅ Cleaned Git configuration for proper commit author recognition
-- ✅ Fixed global Git configuration to resolve Vercel commit author issue
+3. **Set up environment variables**
+   ```bash
+   cp .env.example .env.local
+   # Add your Firebase configuration
+   ```
+
+4. **Run the development server**
+   ```bash
+   pnpm dev
+   ```
+
+5. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
+
+## Environment Variables
+
+Create a `.env.local` file with your Firebase configuration:
+
+```env
+NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+```
+
+## Deployment
+
+The site is automatically deployed to Vercel on every push to the main branch.
+
+**Live Site**: [https://made-with-foshee.vercel.app](https://made-with-foshee.vercel.app)
+
+## Project Structure
+
+```
+├── app/                    # Next.js app directory
+│   ├── admin/             # Admin dashboard
+│   ├── auth/              # Authentication pages
+│   ├── book/              # Booking form
+│   ├── my-trips/          # User's bookings
+│   └── place/             # Property showcase
+├── components/             # Reusable components
+│   ├── admin/             # Admin-specific components
+│   ├── ui/                # Base UI components
+│   └── ...                # Other components
+├── lib/                    # Utility libraries
+│   ├── firebase/          # Firebase configuration
+│   └── ...                # Other utilities
+└── public/                 # Static assets
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## License
+
+This project is private and proprietary to Made by Foshee.
 
 ---
 
