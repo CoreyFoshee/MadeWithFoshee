@@ -150,9 +150,18 @@ export async function getBookings(userId?: string) {
           email: 'user@local.dev'
         }
         
+        // Convert Firestore Timestamps to JavaScript Date objects
+        const processedData = {
+          ...bookingData,
+          start_date: bookingData.start_date?.toDate ? bookingData.start_date.toDate() : bookingData.start_date,
+          end_date: bookingData.end_date?.toDate ? bookingData.end_date.toDate() : bookingData.end_date,
+          created_at: bookingData.created_at?.toDate ? bookingData.created_at.toDate() : bookingData.created_at,
+          updated_at: bookingData.updated_at?.toDate ? bookingData.updated_at.toDate() : bookingData.updated_at
+        }
+        
         return {
           id: docSnapshot.id,
-          ...bookingData,
+          ...processedData,
           listings: listingDetails || { name: 'Unknown Property', description: '' },
           profiles: profileDetails
         }
@@ -194,9 +203,16 @@ export async function getBlackoutDates() {
           }
         }
         
+        // Convert Firestore Timestamps to JavaScript Date objects
+        const processedData = {
+          ...blackoutData,
+          start_date: blackoutData.start_date?.toDate ? blackoutData.start_date.toDate() : blackoutData.start_date,
+          end_date: blackoutData.end_date?.toDate ? blackoutData.end_date.toDate() : blackoutData.end_date
+        }
+        
         return {
           id: docSnapshot.id,
-          ...blackoutData,
+          ...processedData,
           listings: listingDetails || { name: 'Unknown Property' }
         }
       })
