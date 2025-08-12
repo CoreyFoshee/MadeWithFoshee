@@ -122,10 +122,44 @@ export async function getBookings(userId?: string) {
     
     const querySnapshot = await getDocs(q)
     
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }))
+    // Fetch related data for each booking
+    const bookingsWithDetails = await Promise.all(
+      querySnapshot.docs.map(async (docSnapshot) => {
+        const bookingData = docSnapshot.data()
+        
+        // Get listing details
+        let listingDetails = null
+        if (bookingData.listing_id) {
+          try {
+            const listingDoc = await getDoc(doc(db, 'listings', bookingData.listing_id))
+            if (listingDoc.exists()) {
+              const listingData = listingDoc.data()
+              listingDetails = {
+                name: listingData?.name || 'Unknown Property',
+                description: listingData?.description || ''
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching listing details:', error)
+          }
+        }
+        
+        // Get user profile details (placeholder for now)
+        const profileDetails = {
+          full_name: 'Local User', // For local development
+          email: 'user@local.dev'
+        }
+        
+        return {
+          id: docSnapshot.id,
+          ...bookingData,
+          listings: listingDetails || { name: 'Unknown Property', description: '' },
+          profiles: profileDetails
+        }
+      })
+    )
+    
+    return bookingsWithDetails
   } catch (error) {
     console.error('Error fetching bookings:', error)
     return []
@@ -139,10 +173,36 @@ export async function getBlackoutDates() {
       query(collection(db, 'blackout_dates'), orderBy('start_date', 'asc'))
     )
     
-    return querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    }))
+    // Fetch related listing data for each blackout
+    const blackoutsWithDetails = await Promise.all(
+      querySnapshot.docs.map(async (docSnapshot) => {
+        const blackoutData = docSnapshot.data()
+        
+        // Get listing details
+        let listingDetails = null
+        if (blackoutData.listing_id) {
+          try {
+            const listingDoc = await getDoc(doc(db, 'listings', blackoutData.listing_id))
+            if (listingDoc.exists()) {
+              const listingData = listingDoc.data()
+              listingDetails = {
+                name: listingData?.name || 'Unknown Property'
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching listing details for blackout:', error)
+          }
+        }
+        
+        return {
+          id: docSnapshot.id,
+          ...blackoutData,
+          listings: listingDetails || { name: 'Unknown Property' }
+        }
+      })
+    )
+    
+    return blackoutsWithDetails
   } catch (error) {
     console.error('Error fetching blackout dates:', error)
     return []
