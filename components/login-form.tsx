@@ -2,14 +2,17 @@
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Mail, Loader2, CheckCircle, AlertCircle, Lock } from "lucide-react"
+import { Mail, Loader2, CheckCircle, AlertCircle, Lock, User } from "lucide-react"
 import { useState, useEffect, useRef } from "react"
 import { signInWithEmail, createUser, onAuthStateChange } from "@/lib/firebase/auth"
+import { createOrUpdateUserProfile } from "@/lib/firebase/database"
 import { useRouter, usePathname } from "next/navigation"
 
 export default function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [firstName, setFirstName] = useState("")
+  const [lastName, setLastName] = useState("")
   const [isSignUp, setIsSignUp] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
@@ -67,14 +70,41 @@ export default function LoginForm() {
     try {
       if (isSignUp) {
         console.log('LoginForm: Creating account for:', email)
+        
+        // Validate required fields for signup
+        if (!firstName.trim() || !lastName.trim()) {
+          setMessage({ type: 'error', text: 'First name and last name are required' })
+          setIsLoading(false)
+          return
+        }
+        
         const { user, error } = await createUser(email, password)
         if (error) {
           console.log('LoginForm: Account creation error:', error)
           setMessage({ type: 'error', text: error })
-        } else {
-          console.log('LoginForm: Account created successfully')
-          setMessage({ type: 'success', text: 'Account created successfully! You can now sign in.' })
-          setIsSignUp(false)
+        } else if (user) {
+          console.log('LoginForm: Account created successfully, creating user profile...')
+          
+          // Create user profile with first and last name
+          try {
+            await createOrUpdateUserProfile(user.uid, {
+              first_name: firstName.trim(),
+              last_name: lastName.trim(),
+              email: email
+            })
+            console.log('LoginForm: User profile created successfully')
+            setMessage({ type: 'success', text: 'Account created successfully! You can now sign in.' })
+            setIsSignUp(false)
+            // Clear the form
+            setFirstName("")
+            setLastName("")
+            setEmail("")
+            setPassword("")
+          } catch (profileError) {
+            console.log('LoginForm: Profile creation error:', profileError)
+            setMessage({ type: 'error', text: 'Account created but profile setup failed. Please try signing in.' })
+            setIsSignUp(false)
+          }
         }
       } else {
         console.log('LoginForm: Signing in user:', email)
@@ -118,6 +148,18 @@ export default function LoginForm() {
     }
   }
 
+  const handleToggleSignUp = () => {
+    setIsSignUp(!isSignUp)
+    setMessage(null)
+    // Clear form when switching modes
+    if (isSignUp) {
+      setFirstName("")
+      setLastName("")
+      setEmail("")
+      setPassword("")
+    }
+  }
+
   return (
     <div className="w-full max-w-md mx-auto space-y-6">
       <div className="text-center space-y-2">
@@ -133,6 +175,33 @@ export default function LoginForm() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {isSignUp && (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Input
+                  type="text"
+                  placeholder="First name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required={isSignUp}
+                  className="h-12 text-base"
+                />
+              </div>
+              <div>
+                <Input
+                  type="text"
+                  placeholder="Last name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required={isSignUp}
+                  className="h-12 text-base"
+                />
+              </div>
+            </div>
+          </>
+        )}
+        
         <div>
           <Input
             type="email"
@@ -184,7 +253,7 @@ export default function LoginForm() {
             <>
               {isSignUp ? (
                 <>
-                  <Mail className="mr-2 h-4 w-4" />
+                  <User className="mr-2 h-4 w-4" />
                   Create Account
                 </>
               ) : (
@@ -201,10 +270,7 @@ export default function LoginForm() {
       <div className="text-center">
         <button
           type="button"
-          onClick={() => {
-            setIsSignUp(!isSignUp)
-            setMessage(null)
-          }}
+          onClick={handleToggleSignUp}
           className="text-fos-primary hover:text-fos-primary-dark text-sm font-medium"
         >
           {isSignUp 

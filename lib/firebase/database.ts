@@ -297,6 +297,40 @@ export async function getUserProfile(userId: string) {
   }
 }
 
+// Create or update user profile
+export async function createOrUpdateUserProfile(userId: string, profileData: {
+  first_name: string
+  last_name: string
+  email: string
+}) {
+  try {
+    // Check if profile already exists
+    const existingProfile = await getUserProfile(userId)
+    
+    if (existingProfile) {
+      // Update existing profile
+      const profileRef = doc(db, 'profiles', existingProfile.id)
+      await updateDoc(profileRef, {
+        ...profileData,
+        updated_at: Timestamp.now()
+      })
+      return { success: true, message: 'Profile updated successfully' }
+    } else {
+      // Create new profile
+      const profileRef = await addDoc(collection(db, 'profiles'), {
+        user_id: userId,
+        ...profileData,
+        created_at: Timestamp.now(),
+        updated_at: Timestamp.now()
+      })
+      return { success: true, message: 'Profile created successfully', id: profileRef.id }
+    }
+  } catch (error) {
+    console.error('Error creating/updating user profile:', error)
+    throw error
+  }
+}
+
 // Get site settings
 export async function getSiteSettings() {
   try {

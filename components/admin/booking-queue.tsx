@@ -15,8 +15,9 @@ interface Booking {
   guests: number
   notes: string
   created_at: string
+  guest_name?: string
+  guest_email?: string
   listings: { name: string }
-  profiles: { full_name: string }
 }
 
 interface BookingQueueProps {
@@ -135,7 +136,7 @@ export default function BookingQueue({ bookings }: BookingQueueProps) {
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="text-lg font-serif font-bold text-fos-neutral-deep">
-                      {booking.listings.name} - {booking.profiles.full_name}
+                      {booking.listings.name} - {booking.guest_name || booking.guest_email}
                     </h3>
                     <p className="text-sm text-fos-neutral">
                       Requested on {format(new Date(booking.created_at), "MMM dd, yyyy 'at' h:mm a")}

@@ -1,11 +1,13 @@
 "use client"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { createBooking } from "@/lib/firebase/database"
+import { getUserProfile } from "@/lib/firebase/database"
+import { onAuthStateChange, getCurrentUser } from "@/lib/firebase/auth"
 import { BrandCard } from "@/components/ui/brand-card"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Calendar, Users, MessageSquare, Loader2, CheckCircle, AlertCircle } from "lucide-react"
+import { Calendar, Users, MessageSquare, Loader2, CheckCircle, AlertCircle, User } from "lucide-react"
 import { format } from "date-fns"
 import Link from "next/link"
 
@@ -15,6 +17,13 @@ interface Listing {
   description: string
   max_guests: number
   min_nights: number
+}
+
+interface UserProfile {
+  id: string
+  first_name: string
+  last_name: string
+  email: string
 }
 
 interface BookingFormProps {
@@ -30,6 +39,30 @@ export default function BookingForm({ listing, fromDate, toDate, guestCount, ini
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [errorMessage, setErrorMessage] = useState('')
   const [notes, setNotes] = useState(initialNotes ? decodeURIComponent(initialNotes) : '')
+  const [user, setUser] = useState<any>(null)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+
+  // Get current user and profile
+  useEffect(() => {
+    const unsubscribe = onAuthStateChange(async (authUser) => {
+      if (authUser) {
+        setUser(authUser)
+        try {
+          const profile = await getUserProfile(authUser.uid)
+          setUserProfile(profile)
+        } catch (error) {
+          console.error('Error fetching user profile:', error)
+        }
+      } else {
+        setUser(null)
+        setUserProfile(null)
+      }
+      setIsLoading(false)
+    })
+
+    return () => unsubscribe()
+  }, [])
 
   const startDate = new Date(fromDate)
   const endDate = new Date(toDate)
@@ -37,6 +70,12 @@ export default function BookingForm({ listing, fromDate, toDate, guestCount, ini
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (!user || !userProfile) {
+      setErrorMessage('You must be logged in to make a booking')
+      return
+    }
+
     setIsSubmitting(true)
     setSubmitStatus('idle')
     setErrorMessage('')
@@ -62,15 +101,17 @@ export default function BookingForm({ listing, fromDate, toDate, guestCount, ini
         throw new Error(`Maximum ${listing.max_guests} guests allowed`)
       }
 
-      // Create booking data
+      // Create booking data with user profile
       const bookingData = {
         listing_id: listing.id,
-        user_id: 'local-dev-user', // For local development
+        user_id: user.uid,
         start_date: fromDate,
         end_date: toDate,
         guests,
         notes,
-        status: 'pending'
+        status: 'pending',
+        guest_name: `${userProfile.first_name} ${userProfile.last_name}`,
+        guest_email: userProfile.email
       }
 
       // Submit to Firebase
@@ -88,6 +129,42 @@ export default function BookingForm({ listing, fromDate, toDate, guestCount, ini
     }
   }
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <BrandCard>
+          <div className="text-center space-y-4">
+            <Loader2 className="h-16 w-16 text-fos-primary mx-auto animate-spin" />
+            <p className="text-fos-neutral">Loading your profile...</p>
+          </div>
+        </BrandCard>
+      </div>
+    )
+  }
+
+  // Show login required message
+  if (!user || !userProfile) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <BrandCard>
+          <div className="text-center space-y-4">
+            <User className="h-16 w-16 text-fos-neutral mx-auto" />
+            <h1 className="text-3xl font-serif font-bold text-fos-neutral-deep">Login Required</h1>
+            <p className="text-fos-neutral">You must be logged in to make a booking request.</p>
+            <div className="pt-4">
+              <Link href="/auth/login">
+                <Button className="bg-fos-primary hover:bg-fos-primary-dark text-white">
+                  Sign In
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </BrandCard>
+      </div>
+    )
+  }
+
   if (submitStatus === 'success') {
     return (
       <div className="max-w-2xl mx-auto px-4 py-8">
@@ -95,7 +172,7 @@ export default function BookingForm({ listing, fromDate, toDate, guestCount, ini
           <div className="text-center space-y-4">
             <CheckCircle className="h-16 w-16 text-green-500 mx-auto" />
             <h1 className="text-3xl font-serif font-bold text-fos-neutral-deep">Booking Request Submitted!</h1>
-            <p className="text-fos-neutral">Thank you for your booking request. We'll review it and get back to you soon.</p>
+            <p className="text-fos-neutral">Thank you for your booking request, {userProfile.first_name}! We'll review it and get back to you soon.</p>
             <div className="pt-4">
               <Link href="/my-trips">
                 <Button className="bg-fos-primary hover:bg-fos-primary-dark text-white">

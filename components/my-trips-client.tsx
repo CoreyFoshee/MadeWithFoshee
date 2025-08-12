@@ -17,6 +17,8 @@ interface Booking {
   notes: string
   status: "pending" | "approved" | "denied" | "cancelled"
   created_at: string
+  guest_name?: string
+  guest_email?: string
   listings: {
     name: string
     description: string
