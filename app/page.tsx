@@ -28,6 +28,7 @@ interface Listing {
 }
 
 export default function HomePage() {
+  // Updated for Firebase integration - trigger redeploy
   const [contentBlocks, setContentBlocks] = useState<ContentBlock[]>([])
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
