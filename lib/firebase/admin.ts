@@ -7,45 +7,46 @@ let adminDbInstance: Firestore | null = null
 function initializeAdmin() {
   if (adminApp) return adminApp
 
-  // Check if we're in development and have the service account key
-  let serviceAccount: any = null
-
-  try {
-    // In development, you can place the service account JSON in the project root
-    // and import it here, or use environment variables
-    if (process.env.NODE_ENV === 'development') {
-      // You can either:
-      // 1. Place the service account JSON in the project root and import it
-      // 2. Use environment variables (recommended for production)
-      
-      // Option 1: Direct import (place your service account JSON in the project root)
-      serviceAccount = require('../../lake-booking-site-firebase-adminsdk-fbsvc-d126c3038f.json')
-      
-      // Option 2: Environment variables (recommended for production)
-      // serviceAccount = {
-      //   type: process.env.FIREBASE_ADMIN_TYPE,
-      //   project_id: process.env.FIREBASE_ADMIN_PROJECT_ID,
-      //   private_key_id: process.env.FIREBASE_ADMIN_PRIVATE_KEY_ID,
-      //   private_key: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      //   client_email: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
-      //   client_id: process.env.FIREBASE_ADMIN_CLIENT_ID,
-      //   auth_uri: process.env.FIREBASE_ADMIN_AUTH_URI,
-      //   token_uri: process.env.FIREBASE_ADMIN_TOKEN_URI,
-      //   auth_provider_x509_cert_url: process.env.FIREBASE_ADMIN_AUTH_PROVIDER_X509_CERT_URL,
-      //   client_x509_cert_url: process.env.FIREBASE_ADMIN_CLIENT_X509_CERT_URL
-      // }
+  // Check if we're in production (Vercel) or development
+  if (process.env.NODE_ENV === 'production') {
+    // Production: Use environment variables for service account
+    const serviceAccount = {
+      type: process.env.FIREBASE_ADMIN_TYPE || 'service_account',
+      project_id: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      private_key_id: process.env.FIREBASE_ADMIN_PRIVATE_KEY_ID,
+      private_key: process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      client_email: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
+      client_id: process.env.FIREBASE_ADMIN_CLIENT_ID,
+      auth_uri: process.env.FIREBASE_ADMIN_AUTH_URI || 'https://accounts.google.com/o/oauth2/auth',
+      token_uri: process.env.FIREBASE_ADMIN_TOKEN_URI || 'https://oauth2.googleapis.com/token',
+      auth_provider_x509_cert_url: process.env.FIREBASE_ADMIN_AUTH_PROVIDER_X509_CERT_URL || 'https://www.googleapis.com/oauth2/v1/certs',
+      client_x509_cert_url: process.env.FIREBASE_ADMIN_CLIENT_X509_CERT_URL
     }
-  } catch (error) {
-    console.log('Service account not found, using default credentials')
-  }
 
-  // Initialize Firebase Admin
-  adminApp = getApps().length === 0 
-    ? initializeApp({
-        credential: serviceAccount ? cert(serviceAccount) : undefined,
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
-      })
-    : getApps()[0]
+    // Verify we have the essential credentials
+    if (!serviceAccount.private_key || !serviceAccount.client_email || !serviceAccount.project_id) {
+      throw new Error('Missing required Firebase Admin environment variables for production')
+    }
+
+    adminApp = initializeApp({
+      credential: cert(serviceAccount),
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    })
+  } else {
+    // Development: Try to use service account file
+    let serviceAccount: any = null
+
+    try {
+      serviceAccount = require('../../lake-booking-site-firebase-adminsdk-fbsvc-d126c3038f.json')
+    } catch (error) {
+      console.log('Service account file not found, using default credentials')
+    }
+
+    adminApp = initializeApp({
+      credential: serviceAccount ? cert(serviceAccount) : undefined,
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+    })
+  }
 
   return adminApp
 }
