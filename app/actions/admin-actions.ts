@@ -110,3 +110,94 @@ export async function deleteBlackout(blackoutId: string, userId: string) {
     return { error: error instanceof Error ? error.message : "Failed to delete blackout dates" }
   }
 }
+
+export async function inviteUser(formData: FormData, userId: string) {
+  try {
+    const hasPermission = await checkOwnerPermission(userId)
+    if (!hasPermission) {
+      return { error: "Permission denied: Admin access required" }
+    }
+
+    const email = formData.get("email")?.toString()
+    const fullName = formData.get("fullName")?.toString()
+
+    if (!email || !fullName) {
+      return { error: "Email and full name are required" }
+    }
+
+    // Get inviter's name
+    const adminDb = getAdminDb()
+    const inviterProfile = await adminDb.collection('profiles').where('user_id', '==', userId).get()
+    
+    let inviterName = 'Property Owner'
+    if (!inviterProfile.empty) {
+      const profileData = inviterProfile.docs[0].data()
+      // Check for different name field formats
+      if (profileData.full_name) {
+        inviterName = profileData.full_name
+      } else if (profileData.first_name && profileData.last_name) {
+        inviterName = `${profileData.first_name} ${profileData.last_name}`
+      } else if (profileData.first_name) {
+        inviterName = profileData.first_name
+      }
+    }
+    
+    console.log('Inviter profile data:', inviterProfile.empty ? 'No profile found' : inviterProfile.docs[0].data())
+    console.log('Using inviter name:', inviterName)
+
+    // Import and use the invitation system
+    const { createInvitation } = await import('@/lib/invitations')
+    const result = await createInvitation(email, fullName, userId, inviterName)
+
+    if (!result.success) {
+      return { error: result.error }
+    }
+
+    revalidatePath("/admin")
+    return { success: true, message: `Invitation sent to ${email}!` }
+  } catch (error) {
+    console.error('Error inviting user:', error)
+    return { error: error instanceof Error ? error.message : "Failed to send invitation" }
+  }
+}
+
+export async function getPendingInvitations(userId: string) {
+  try {
+    const hasPermission = await checkOwnerPermission(userId)
+    if (!hasPermission) {
+      return { error: "Permission denied: Admin access required" }
+    }
+
+    // Import and use the invitation system
+    const { getPendingInvitations: getInvitations } = await import('@/lib/invitations')
+    const invitations = await getInvitations()
+
+    return { success: true, invitations }
+  } catch (error) {
+    console.error('Error getting pending invitations:', error)
+    return { error: error instanceof Error ? error.message : "Failed to get invitations" }
+  }
+}
+
+export async function cancelInvitation(invitationId: string, userId: string) {
+  try {
+    const hasPermission = await checkOwnerPermission(userId)
+    if (!hasPermission) {
+      return { error: "Permission denied: Admin access required" }
+    }
+
+    // Import and use the invitation system
+    const { cancelInvitation: cancelInvite } = await import('@/lib/invitations')
+    const result = await cancelInvite(invitationId)
+
+    if (!result.success) {
+      return { error: result.error }
+    }
+
+    revalidatePath("/admin")
+    return { success: true, message: "Invitation cancelled successfully" }
+  } catch (error) {
+    console.error('Error canceling invitation:', error)
+    return { error: error instanceof Error ? error.message : "Failed to cancel invitation" }
+  }
+}

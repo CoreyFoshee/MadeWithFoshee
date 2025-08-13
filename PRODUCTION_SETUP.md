@@ -5,7 +5,7 @@
 ### 1. 🔑 Set Up Vercel Environment Variables
 
 1. Go to [Vercel Dashboard](https://vercel.com/dashboard)
-2. Select your `MadeWithFoshee` project
+2. Select your `LakeWithFoshee` project
 3. Go to **Settings → Environment Variables**
 4. Add these variables (get values from your Firebase Console):
 

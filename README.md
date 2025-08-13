@@ -1,4 +1,4 @@
-# Made by Foshee - Lake House Booking Site
+# Lake With Foshee - Lake House Booking Site
 
 A beautiful, modern lake house booking platform built with Next.js, Firebase, and Tailwind CSS.
 
@@ -32,8 +32,8 @@ A beautiful, modern lake house booking platform built with Next.js, Firebase, an
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/CoreyFoshee/MadeWithFoshee.git
-   cd MadeWithFoshee
+   git clone https://github.com/CoreyFoshee/LakeWithFoshee.git
+cd LakeWithFoshee
    ```
 
 2. **Install dependencies**
@@ -102,7 +102,7 @@ The site is automatically deployed to Vercel on every push to the main branch.
 
 ## License
 
-This project is private and proprietary to Made by Foshee.
+This project is private and proprietary to Lake With Foshee.
 
 ---
 

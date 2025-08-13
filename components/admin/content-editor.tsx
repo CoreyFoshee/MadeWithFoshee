@@ -79,7 +79,7 @@ export default function ContentEditor({ contentBlocks }: ContentEditorProps) {
 
   const exampleData = {
     hero: {
-      title: "Made By Foshee",
+              title: "Lake With Foshee",
       subtitle: "Your family lake house awaits",
       cta_text: "Request Dates",
       background_image: "/images/lake-house-hero.jpg",

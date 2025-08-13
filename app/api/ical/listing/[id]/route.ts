@@ -36,7 +36,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
         location: booking.listings.name,
         status: "CONFIRMED",
         busyStatus: "BUSY",
-        uid: `booking-${booking.id}@madebyfoshee.com`,
+        uid: `booking-${booking.id}@lakewithfoshee.com`,
       }
     })
 

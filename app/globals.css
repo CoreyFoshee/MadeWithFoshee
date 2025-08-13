@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Added Made By Foshee brand color tokens */
+  /* Added Lake With Foshee brand color tokens */
   --fos-primary-dark: #1e676b;
   --fos-primary: #1f7a7e;
   --fos-primary-light: #a8d7d6;

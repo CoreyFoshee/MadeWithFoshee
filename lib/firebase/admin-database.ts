@@ -46,8 +46,8 @@ const sampleContentBlocks = [
 
 const sampleSiteSettings = {
   id: 'main-settings',
-  site_name: 'Made With Foshee',
-  contact_email: 'booking@madewithfoshee.com',
+      site_name: 'Lake With Foshee',
+  contact_email: 'booking@lakewithfoshee.com',
   phone: '+1 (555) 123-4567',
   address: '123 Lake View Drive, Lake Tahoe, CA 96150',
   created_at: new Date(),

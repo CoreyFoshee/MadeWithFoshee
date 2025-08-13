@@ -1,4 +1,4 @@
-// Made By Foshee Brand Design Tokens
+// Lake With Foshee Brand Design Tokens
 
 export const brandTokens = {
   colors: {

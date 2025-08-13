@@ -159,7 +159,7 @@ async function sendBookingNotification({
   const resend = new Resend(process.env.RESEND_API_KEY)
   
   await resend.emails.send({
-    from: 'Made By Foshee <noreply@madebyfoshee.com>',
+            from: 'Lake With Foshee <noreply@lakewithfoshee.com>',
     to: [user.email],
     subject: `Booking ${type} - ${listing.name}`,
     html: generateEmailTemplate(booking, listing, user, type)

@@ -19,7 +19,7 @@ const montserrat = Montserrat({
 })
 
 export const metadata: Metadata = {
-  title: "Made By Foshee - Family Lake House",
+  title: "Lake With Foshee - Family Lake House",
   description: "Your family lake house booking platform",
   generator: "v0.dev",
 }
