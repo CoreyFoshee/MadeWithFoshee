@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import BrandHeader from "@/components/brand-header"
 import BookingQueue from "@/components/admin/booking-queue"
+import ApprovedBookings from "@/components/admin/approved-bookings"
 import BlackoutManager from "@/components/admin/blackout-manager"
 import ContentEditor from "@/components/admin/content-editor"
 import UserInvites from "@/components/admin/user-invites"
@@ -12,6 +13,7 @@ import AuthGuard from "@/components/auth-guard"
 
 export default function AdminPage() {
   const [pendingBookings, setPendingBookings] = useState<any[]>([])
+  const [approvedBookings, setApprovedBookings] = useState<any[]>([])
   const [blackoutDates, setBlackoutDates] = useState<any[]>([])
   const [contentBlocks, setContentBlocks] = useState<any[]>([])
   const [listings, setListings] = useState<any[]>([])
@@ -27,10 +29,12 @@ export default function AdminPage() {
           getListings()
         ])
         
-        // Filter pending bookings
+        // Filter bookings by status
         const pending = bookingsData.filter((booking: any) => booking.status === 'pending')
+        const approved = bookingsData.filter((booking: any) => booking.status === 'approved')
         
         setPendingBookings(pending)
+        setApprovedBookings(approved)
         setBlackoutDates(blackoutsData)
         setContentBlocks(contentData)
         setListings(listingsData)
@@ -71,13 +75,19 @@ export default function AdminPage() {
             </div>
 
           {/* Admin Tabs */}
-          <Tabs defaultValue="bookings" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4 bg-white">
+          <Tabs defaultValue="pending" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-5 bg-white">
               <TabsTrigger
-                value="bookings"
+                value="pending"
                 className="data-[state=active]:bg-fos-primary data-[state=active]:text-white"
               >
-                Bookings ({pendingBookings?.length || 0})
+                Pending ({pendingBookings?.length || 0})
+              </TabsTrigger>
+              <TabsTrigger
+                value="approved"
+                className="data-[state=active]:bg-fos-primary data-[state=active]:text-white"
+              >
+                Confirmed ({approvedBookings?.length || 0})
               </TabsTrigger>
               <TabsTrigger
                 value="blackouts"
@@ -96,8 +106,12 @@ export default function AdminPage() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="bookings">
+            <TabsContent value="pending">
               <BookingQueue bookings={pendingBookings || []} />
+            </TabsContent>
+
+            <TabsContent value="approved">
+              <ApprovedBookings bookings={approvedBookings || []} />
             </TabsContent>
 
             <TabsContent value="blackouts">
@@ -114,7 +128,6 @@ export default function AdminPage() {
           </Tabs>
         </div>
       </div>
-    </div>
-      </AuthGuard>
+    </AuthGuard>
   )
 }
