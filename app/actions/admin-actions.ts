@@ -12,46 +12,160 @@ async function checkOwnerPermission(userId: string) {
 
 export async function approveBooking(bookingId: string, userId: string) {
   try {
+    console.log('🚀 Starting approveBooking...')
+    console.log('📝 Booking ID:', bookingId)
+    console.log('👤 User ID:', userId)
+    
     const hasPermission = await checkOwnerPermission(userId)
     if (!hasPermission) {
+      console.log('❌ Permission denied for user:', userId)
       return { error: "Permission denied: Admin access required" }
     }
+    console.log('✅ Permission granted')
 
     const adminDb = getAdminDb()
+    console.log('✅ Admin DB connection established')
+    
+    // Get the booking details first
+    console.log('📖 Fetching booking details...')
+    const bookingDoc = await adminDb.collection('bookings').doc(bookingId).get()
+    if (!bookingDoc.exists) {
+      console.log('❌ Booking not found:', bookingId)
+      return { error: "Booking not found" }
+    }
+    
+    const booking = bookingDoc.data()
+    if (!booking) {
+      console.log('❌ Booking data is null')
+      return { error: "Booking data not found" }
+    }
+    
+    console.log('📋 Booking data retrieved:', JSON.stringify(booking, null, 2))
     
     // Update the booking status to approved
+    console.log('✏️ Updating booking status to approved...')
     await adminDb.collection('bookings').doc(bookingId).update({ 
       status: "approved",
-      updated_at: new Date()
+      updated_at: new Date(),
+      approved_at: new Date()
     })
+    console.log('✅ Booking status updated successfully')
 
+    // Send confirmation email to the guest
+    console.log('📧 Attempting to send approval confirmation email...')
+    try {
+      const { sendBookingStatusEmail } = await import('@/lib/email')
+      console.log('✅ Email module imported successfully')
+      
+      const emailData = {
+        to: booking.guest_email,
+        guestName: booking.guest_name,
+        listingName: booking.listing_name || 'Family Lake House',
+        startDate: booking.start_date.toDate ? booking.start_date.toDate().toISOString().split('T')[0] : booking.start_date,
+        endDate: booking.end_date.toDate ? booking.end_date.toDate().toISOString().split('T')[0] : booking.end_date,
+        guests: booking.guests,
+        status: 'approved' as const,
+        notes: booking.notes
+      }
+      
+      console.log('📧 Email data prepared:', JSON.stringify(emailData, null, 2))
+      
+      await sendBookingStatusEmail(emailData)
+      console.log('✅ Approval confirmation email sent successfully!')
+    } catch (emailError) {
+      console.error('❌ Error sending approval email:', emailError)
+      console.error('❌ Error details:', JSON.stringify(emailError, null, 2))
+      // Continue even if email fails
+    }
+
+    console.log('🔄 Revalidating admin path...')
     revalidatePath("/admin")
+    
+    console.log('🎉 approveBooking completed successfully!')
     return { success: true }
   } catch (error) {
-    console.error('Error approving booking:', error)
+    console.error('❌ Error in approveBooking:', error)
+    console.error('❌ Error details:', JSON.stringify(error, null, 2))
     return { error: error instanceof Error ? error.message : "Failed to approve booking" }
   }
 }
 
 export async function denyBooking(bookingId: string, userId: string) {
   try {
+    console.log('🚀 Starting denyBooking...')
+    console.log('📝 Booking ID:', bookingId)
+    console.log('👤 User ID:', userId)
+    
     const hasPermission = await checkOwnerPermission(userId)
     if (!hasPermission) {
+      console.log('❌ Permission denied for user:', userId)
       return { error: "Permission denied: Admin access required" }
     }
+    console.log('✅ Permission granted')
 
     const adminDb = getAdminDb()
+    console.log('✅ Admin DB connection established')
+    
+    // Get the booking details first
+    console.log('📖 Fetching booking details...')
+    const bookingDoc = await adminDb.collection('bookings').doc(bookingId).get()
+    if (!bookingDoc.exists) {
+      console.log('❌ Booking not found:', bookingId)
+      return { error: "Booking not found" }
+    }
+    
+    const booking = bookingDoc.data()
+    if (!booking) {
+      console.log('❌ Booking data is null')
+      return { error: "Booking data not found" }
+    }
+    
+    console.log('📋 Booking data retrieved:', JSON.stringify(booking, null, 2))
     
     // Update the booking status to denied
+    console.log('✏️ Updating booking status to denied...')
     await adminDb.collection('bookings').doc(bookingId).update({ 
       status: "denied",
-      updated_at: new Date()
+      updated_at: new Date(),
+      denied_at: new Date()
     })
+    console.log('✅ Booking status updated successfully')
 
+    // Send notification email to the guest
+    console.log('📧 Attempting to send denial notification email...')
+    try {
+      const { sendBookingStatusEmail } = await import('@/lib/email')
+      console.log('✅ Email module imported successfully')
+      
+      const emailData = {
+        to: booking.guest_email,
+        guestName: booking.guest_name,
+        listingName: booking.listing_name || 'Family Lake House',
+        startDate: booking.start_date.toDate ? booking.start_date.toDate().toISOString().split('T')[0] : booking.start_date,
+        endDate: booking.end_date.toDate ? booking.end_date.toDate().toISOString().split('T')[0] : booking.end_date,
+        guests: booking.guests,
+        status: 'denied' as const,
+        notes: booking.notes
+      }
+      
+      console.log('📧 Email data prepared:', JSON.stringify(emailData, null, 2))
+      
+      await sendBookingStatusEmail(emailData)
+      console.log('✅ Denial notification email sent successfully!')
+    } catch (emailError) {
+      console.error('❌ Error sending denial email:', emailError)
+      console.error('❌ Error details:', JSON.stringify(emailError, null, 2))
+      // Continue even if email fails
+    }
+
+    console.log('🔄 Revalidating admin path...')
     revalidatePath("/admin")
+    
+    console.log('🎉 denyBooking completed successfully!')
     return { success: true }
   } catch (error) {
-    console.error('Error denying booking:', error)
+    console.error('❌ Error in denyBooking:', error)
+    console.error('❌ Error details:', JSON.stringify(error, null, 2))
     return { error: error instanceof Error ? error.message : "Failed to deny booking" }
   }
 }
@@ -65,6 +179,17 @@ export async function cancelConfirmedBooking(bookingId: string, userId: string) 
 
     const adminDb = getAdminDb()
     
+    // Get the booking details first
+    const bookingDoc = await adminDb.collection('bookings').doc(bookingId).get()
+    if (!bookingDoc.exists) {
+      return { error: "Booking not found" }
+    }
+    
+    const booking = bookingDoc.data()
+    if (!booking) {
+      return { error: "Booking data not found" }
+    }
+    
     // Update the booking status to cancelled
     await adminDb.collection('bookings').doc(bookingId).update({ 
       status: "cancelled",
@@ -72,6 +197,24 @@ export async function cancelConfirmedBooking(bookingId: string, userId: string) 
       cancelled_by: userId,
       cancelled_at: new Date()
     })
+
+    // Send cancellation email to the guest
+    try {
+      const { sendBookingStatusEmail } = await import('@/lib/email')
+      await sendBookingStatusEmail({
+        to: booking.guest_email,
+        guestName: booking.guest_name,
+        listingName: booking.listing_name || 'Family Lake House',
+        startDate: booking.start_date.toDate ? booking.start_date.toDate().toISOString().split('T')[0] : booking.start_date,
+        endDate: booking.end_date.toDate ? booking.end_date.toDate().toISOString().split('T')[0] : booking.end_date,
+        guests: booking.guests,
+        status: 'cancelled',
+        notes: booking.notes
+      })
+    } catch (emailError) {
+      console.error('Error sending cancellation email:', emailError)
+      // Continue even if email fails
+    }
 
     revalidatePath("/admin")
     return { success: true, message: "Booking cancelled successfully" }

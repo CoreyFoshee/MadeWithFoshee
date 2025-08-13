@@ -1,6 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
-import { createBooking } from "@/lib/firebase/database"
+import { createBookingWithEmails } from "@/app/actions/booking-actions"
 import { getUserProfile } from "@/lib/firebase/database"
 import { onAuthStateChange, getCurrentUser } from "@/lib/firebase/auth"
 import { BrandCard } from "@/components/ui/brand-card"
@@ -104,6 +104,7 @@ export default function BookingForm({ listing, fromDate, toDate, guestCount, ini
       // Create booking data with user profile
       const bookingData = {
         listing_id: listing.id,
+        listing_name: listing.name,
         user_id: user.uid,
         start_date: fromDate,
         end_date: toDate,
@@ -114,8 +115,12 @@ export default function BookingForm({ listing, fromDate, toDate, guestCount, ini
         guest_email: userProfile.email
       }
 
-      // Submit to Firebase
-      const result = await createBooking(bookingData)
+      // Submit using server action
+      const result = await createBookingWithEmails(bookingData)
+      
+      if (result.error) {
+        throw new Error(result.error)
+      }
       
       setSubmitStatus('success')
       console.log('Booking created successfully:', result)
