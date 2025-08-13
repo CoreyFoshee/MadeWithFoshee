@@ -74,58 +74,62 @@ export default function AdminPage() {
               <p className="text-fos-neutral">Manage bookings, content, and property settings</p>
             </div>
 
-          {/* Admin Tabs */}
-          <Tabs defaultValue="pending" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 bg-white">
-              <TabsTrigger
-                value="pending"
-                className="data-[state=active]:bg-fos-primary data-[state=active]:text-white"
-              >
-                Pending ({pendingBookings?.length || 0})
-              </TabsTrigger>
-              <TabsTrigger
-                value="approved"
-                className="data-[state=active]:bg-fos-primary data-[state=active]:text-white"
-              >
-                Confirmed ({approvedBookings?.length || 0})
-              </TabsTrigger>
-              <TabsTrigger
-                value="blackouts"
-                className="data-[state=active]:bg-fos-primary data-[state=active]:text-white"
-              >
-                Blackout Dates
-              </TabsTrigger>
-              <TabsTrigger
-                value="content"
-                className="data-[state=active]:bg-fos-primary data-[state=active]:text-white"
-              >
-                Content
-              </TabsTrigger>
-              <TabsTrigger value="users" className="data-[state=active]:bg-fos-primary data-[state=active]:text-white">
-                Users
-              </TabsTrigger>
-            </TabsList>
+            {/* Admin Tabs */}
+            <Tabs defaultValue="pending" className="space-y-6">
+              <TabsList className="grid w-full grid-cols-5 bg-white">
+                <TabsTrigger
+                  value="pending"
+                  className="data-[state=active]:bg-fos-primary data-[state=active]:text-white"
+                >
+                  Pending ({pendingBookings?.length || 0})
+                </TabsTrigger>
+                <TabsTrigger
+                  value="approved"
+                  className="data-[state=active]:bg-fos-primary data-[state=active]:text-white"
+                >
+                  Confirmed ({approvedBookings?.length || 0})
+                </TabsTrigger>
+                <TabsTrigger
+                  value="blackouts"
+                  className="data-[state=active]:bg-fos-primary data-[state=active]:text-white"
+                >
+                  Blackout Dates
+                </TabsTrigger>
+                <TabsTrigger
+                  value="content"
+                  className="data-[state=active]:bg-fos-primary data-[state=active]:text-white"
+                >
+                  Content
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="users" 
+                  className="data-[state=active]:bg-fos-primary data-[state=active]:text-white"
+                >
+                  Users
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="pending">
-              <BookingQueue bookings={pendingBookings || []} />
-            </TabsContent>
+              <TabsContent value="pending">
+                <BookingQueue bookings={pendingBookings || []} />
+              </TabsContent>
 
-            <TabsContent value="approved">
-              <ApprovedBookings bookings={approvedBookings || []} />
-            </TabsContent>
+              <TabsContent value="approved">
+                <ApprovedBookings bookings={approvedBookings || []} />
+              </TabsContent>
 
-            <TabsContent value="blackouts">
-              <BlackoutManager blackoutDates={blackoutDates || []} listings={listings || []} />
-            </TabsContent>
+              <TabsContent value="blackouts">
+                <BlackoutManager blackoutDates={blackoutDates || []} listings={listings || []} />
+              </TabsContent>
 
-            <TabsContent value="content">
-              <ContentEditor contentBlocks={contentBlocks || []} />
-            </TabsContent>
+              <TabsContent value="content">
+                <ContentEditor contentBlocks={contentBlocks || []} />
+              </TabsContent>
 
-            <TabsContent value="users">
-              <UserInvites />
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="users">
+                <UserInvites />
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
       </div>
     </AuthGuard>
