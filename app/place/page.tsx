@@ -252,6 +252,7 @@ export default function PlacePage() {
               listing={listing} 
               selectedRange={selectedDateRange}
               onDateRangeChange={handleDateRangeSelect}
+              unavailableDates={unavailableDates}
             />
           </div>
         </div>

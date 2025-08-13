@@ -22,10 +22,11 @@ interface BookingPanelProps {
   }
   selectedRange?: DateRange
   onDateRangeChange?: (range: DateRange | undefined) => void
+  unavailableDates?: Date[]
   className?: string
 }
 
-export default function BookingPanel({ listing, selectedRange, onDateRangeChange, className = "" }: BookingPanelProps) {
+export default function BookingPanel({ listing, selectedRange, onDateRangeChange, unavailableDates = [], className = "" }: BookingPanelProps) {
   const [guests, setGuests] = useState(2)
   const [notes, setNotes] = useState("")
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
@@ -180,7 +181,7 @@ export default function BookingPanel({ listing, selectedRange, onDateRangeChange
                       }}
                       numberOfMonths={12}
                       className="calendar-popup"
-                      disabled={{ before: new Date() }}
+                      disabled={[{ before: new Date() }, ...unavailableDates]}
                       showOutsideDays={false}
                       captionLayout="dropdown"
                       fromYear={new Date().getFullYear()}
