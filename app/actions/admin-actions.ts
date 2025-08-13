@@ -56,6 +56,31 @@ export async function denyBooking(bookingId: string, userId: string) {
   }
 }
 
+export async function cancelConfirmedBooking(bookingId: string, userId: string) {
+  try {
+    const hasPermission = await checkOwnerPermission(userId)
+    if (!hasPermission) {
+      return { error: "Permission denied: Admin access required" }
+    }
+
+    const adminDb = getAdminDb()
+    
+    // Update the booking status to cancelled
+    await adminDb.collection('bookings').doc(bookingId).update({ 
+      status: "cancelled",
+      updated_at: new Date(),
+      cancelled_by: userId,
+      cancelled_at: new Date()
+    })
+
+    revalidatePath("/admin")
+    return { success: true, message: "Booking cancelled successfully" }
+  } catch (error) {
+    console.error('Error cancelling confirmed booking:', error)
+    return { error: error instanceof Error ? error.message : "Failed to cancel booking" }
+  }
+}
+
 export async function createBlackout(prevState: any, formData: FormData, userId: string) {
   try {
     const hasPermission = await checkOwnerPermission(userId)
@@ -199,5 +224,89 @@ export async function cancelInvitation(invitationId: string, userId: string) {
   } catch (error) {
     console.error('Error canceling invitation:', error)
     return { error: error instanceof Error ? error.message : "Failed to cancel invitation" }
+  }
+}
+
+export async function updateContentBlock(prevState: any, formData: FormData, userId: string) {
+  try {
+    const hasPermission = await checkOwnerPermission(userId)
+    if (!hasPermission) {
+      return { error: "Permission denied: Admin access required" }
+    }
+
+    const adminDb = getAdminDb()
+    
+    const blockId = formData.get("blockId")?.toString()
+    const title = formData.get("title")?.toString()
+    const content = formData.get("content")?.toString()
+    const type = formData.get("type")?.toString()
+
+    if (!blockId || !title || !content || !type) {
+      return { error: "Missing required fields" }
+    }
+
+    await adminDb.collection('content_blocks').doc(blockId).update({
+      title,
+      content,
+      type,
+      updated_at: new Date()
+    })
+
+    revalidatePath("/admin")
+    return { success: true }
+  } catch (error) {
+    console.error('Error updating content block:', error)
+    return { error: error instanceof Error ? error.message : "Failed to update content block" }
+  }
+}
+
+export async function deleteContentBlock(blockId: string, userId: string) {
+  try {
+    const hasPermission = await checkOwnerPermission(userId)
+    if (!hasPermission) {
+      return { error: "Permission denied: Admin access required" }
+    }
+    
+    const adminDb = getAdminDb()
+    
+    await adminDb.collection('content_blocks').doc(blockId).delete()
+
+    revalidatePath("/admin")
+    return { success: true }
+  } catch (error) {
+    console.error('Error deleting content block:', error)
+    return { error: error instanceof Error ? error.message : "Failed to delete content block" }
+  }
+}
+
+export async function getExistingUsers(userId: string) {
+  try {
+    const hasPermission = await checkOwnerPermission(userId)
+    if (!hasPermission) {
+      return { error: "Permission denied: Admin access required" }
+    }
+
+    const adminDb = getAdminDb()
+    
+    // Get all user profiles
+    const profilesSnapshot = await adminDb.collection('profiles').get()
+    
+    const users = profilesSnapshot.docs.map(doc => {
+      const data = doc.data()
+      return {
+        id: doc.id,
+        user_id: data.user_id,
+        full_name: data.full_name || `${data.first_name || ''} ${data.last_name || ''}`.trim() || 'Unknown Name',
+        email: data.email,
+        role: data.role || 'family',
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      }
+    })
+
+    return { success: true, users }
+  } catch (error) {
+    console.error('Error getting existing users:', error)
+    return { error: error instanceof Error ? error.message : "Failed to get existing users" }
   }
 }

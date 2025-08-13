@@ -88,6 +88,15 @@
   --sidebar-ring: oklch(0.439 0 0);
 }
 
+/* Hide scrollbar for mobile admin tabs */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Safari and Chrome */
+}
+
 @theme inline {
   /* Added brand color utilities for Tailwind */
   --color-fos-primary-dark: var(--fos-primary-dark);

@@ -79,7 +79,7 @@ export default function HomePage() {
         <section className="relative bg-gradient-to-br from-blue-50 to-indigo-100 py-20">
           <div className="container mx-auto px-4 text-center">
             <h1 className="text-5xl font-bold text-gray-900 mb-6 font-serif">
-              Welcome to Your Family Lake House
+              Welcome to The Foshee Family Lake House
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
               Experience the perfect blend of luxury and nature in our stunning lakefront property. 
@@ -141,10 +141,13 @@ export default function HomePage() {
               <div>
                 <PropertyGallery 
                   images={[
-                    "/lake-house-dock.png",
-                    "/lake-house-living-room.png",
+                    "/lake-house-exterior1.png",
+                    "/lake-house-exterior2.png",
+                    "/lake-house-exterior3.png",
+                    "/modern-lake-house-kitchen.png",
                     "/lake-house-bedroom.png",
-                    "/modern-lake-house-kitchen.png"
+                    "/lake-house-living-room.png",
+                    "/lake-house-dock.png"
                   ]} 
                   propertyName={defaultListing.name}
                 />

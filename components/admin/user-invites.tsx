@@ -2,7 +2,7 @@
 
 
 import { useState, useEffect } from "react"
-import { inviteUser, getPendingInvitations, cancelInvitation } from "@/app/actions/admin-actions"
+import { inviteUser, getPendingInvitations, cancelInvitation, getExistingUsers } from "@/app/actions/admin-actions"
 import { BrandCard } from "@/components/ui/brand-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -32,12 +32,15 @@ function SubmitButton({ isSubmitting }: { isSubmitting: boolean }) {
 export default function UserInvites() {
   const { toast } = useToast()
   const [pendingInvitations, setPendingInvitations] = useState<any[]>([])
+  const [existingUsers, setExistingUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [loadingUsers, setLoadingUsers] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Load pending invitations
+  // Load pending invitations and existing users
   useEffect(() => {
     loadPendingInvitations()
+    loadExistingUsers()
   }, [])
 
   const loadPendingInvitations = async () => {
@@ -63,6 +66,32 @@ export default function UserInvites() {
       console.error('Error loading invitations:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadExistingUsers = async () => {
+    try {
+      setLoadingUsers(true)
+      
+      // Get current user ID
+      const currentUser = getCurrentUser()
+      if (!currentUser) {
+        console.error('No current user found')
+        return
+      }
+
+      // Use the server action directly
+      const result = await getExistingUsers(currentUser.uid)
+      
+      if (result.success) {
+        setExistingUsers(result.users || [])
+      } else {
+        console.error('Error loading existing users:', result.error)
+      }
+    } catch (error) {
+      console.error('Error loading existing users:', error)
+    } finally {
+      setLoadingUsers(false)
     }
   }
 
@@ -95,8 +124,9 @@ export default function UserInvites() {
           title: "Invitation Sent!",
           description: result.message,
         })
-        // Reload invitations
+        // Reload invitations and users
         loadPendingInvitations()
+        loadExistingUsers()
         // Reset form
         const form = document.querySelector('form') as HTMLFormElement
         if (form) form.reset()
@@ -253,6 +283,59 @@ export default function UserInvites() {
                   >
                     Cancel
                   </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </BrandCard>
+
+      {/* Existing Users */}
+      <BrandCard>
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-green-600" />
+            <h3 className="text-lg font-serif font-bold text-fos-neutral-deep">Active Users</h3>
+          </div>
+
+          {loadingUsers ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-fos-primary" />
+              <span className="ml-2 text-fos-neutral">Loading users...</span>
+            </div>
+          ) : existingUsers.length === 0 ? (
+            <div className="text-center py-8 text-fos-neutral">
+              <CheckCircle className="h-12 w-12 mx-auto mb-4 text-fos-neutral-light" />
+              <p>No active users found</p>
+              <p className="text-sm">Users who complete their account setup will appear here</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {existingUsers.map((user) => (
+                <div key={user.id} className="flex items-center justify-between p-4 bg-fos-neutral-light/30 rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <div>
+                        <p className="font-medium text-fos-neutral-deep">{user.full_name}</p>
+                        <p className="text-sm text-fos-neutral">{user.email}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className={`px-2 py-1 text-xs rounded-full ${
+                            user.role === 'owner' 
+                              ? 'bg-purple-100 text-purple-800' 
+                              : user.role === 'admin' 
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-green-100 text-green-800'
+                          }`}>
+                            {user.role === 'owner' ? 'Owner' : user.role === 'admin' ? 'Admin' : 'Family Member'}
+                          </span>
+                          <span className="text-xs text-fos-neutral-light">
+                            Joined {user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               ))}
             </div>

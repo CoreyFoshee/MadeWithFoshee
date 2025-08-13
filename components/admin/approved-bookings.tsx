@@ -1,9 +1,14 @@
 "use client"
 
+import { useState } from "react"
 import { BrandCard } from "@/components/ui/brand-card"
 import { Badge } from "@/components/ui/badge"
-import { Calendar, Users, MessageSquare, CheckCircle, MapPin } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Calendar, Users, MessageSquare, CheckCircle, MapPin, XCircle, AlertTriangle } from "lucide-react"
 import { format } from "date-fns"
+import { useToast } from "@/hooks/use-toast"
+import { cancelConfirmedBooking } from "@/app/actions/admin-actions"
+import { getCurrentUser } from "@/lib/firebase/auth"
 
 interface Booking {
   id: string
@@ -22,6 +27,54 @@ interface ApprovedBookingsProps {
 }
 
 export default function ApprovedBookings({ bookings }: ApprovedBookingsProps) {
+  const { toast } = useToast()
+  const [cancellingBookings, setCancellingBookings] = useState<Set<string>>(new Set())
+
+  const handleCancelBooking = async (bookingId: string) => {
+    try {
+      setCancellingBookings(prev => new Set(prev).add(bookingId))
+      
+      const currentUser = getCurrentUser()
+      if (!currentUser) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to cancel bookings",
+          variant: "destructive"
+        })
+        return
+      }
+
+      const result = await cancelConfirmedBooking(bookingId, currentUser.uid)
+      
+      if (result.success) {
+        toast({
+          title: "Booking Cancelled",
+          description: result.message,
+        })
+        // Refresh the page to show updated data
+        window.location.reload()
+      } else {
+        toast({
+          title: "Error",
+          description: result.error,
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to cancel booking",
+        variant: "destructive"
+      })
+    } finally {
+      setCancellingBookings(prev => {
+        const newSet = new Set(prev)
+        newSet.delete(bookingId)
+        return newSet
+      })
+    }
+  }
+
   if (bookings.length === 0) {
     return (
       <BrandCard className="text-center py-12">
@@ -122,6 +175,40 @@ export default function ApprovedBookings({ bookings }: ApprovedBookingsProps) {
                   <div>
                     <span className="font-medium text-fos-neutral-deep">Check-out:</span>
                     <p className="text-fos-neutral">{format(endDate, "EEEE, MMMM dd, yyyy")}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Admin Actions */}
+              <div className="pt-2 border-t border-fos-neutral-light">
+                <div className="flex flex-col gap-2">
+                  <p className="text-xs text-fos-neutral-light text-center">
+                    ⚠️ Cancelling will move this booking to the "Cancelled" tab
+                  </p>
+                  <div className="flex justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        if (window.confirm(`Are you sure you want to cancel this booking?\n\n${booking.guest_name || booking.guest_email} - ${format(startDate, "MMM dd")} to ${format(endDate, "MMM dd")}\n\nThis action cannot be undone.`)) {
+                          handleCancelBooking(booking.id)
+                        }
+                      }}
+                      disabled={cancellingBookings.has(booking.id)}
+                      className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                    >
+                      {cancellingBookings.has(booking.id) ? (
+                        <>
+                          <AlertTriangle className="mr-2 h-4 w-4 animate-pulse" />
+                          Cancelling...
+                        </>
+                      ) : (
+                        <>
+                          <XCircle className="mr-2 h-4 w-4" />
+                          Cancel Booking
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </div>
               </div>
