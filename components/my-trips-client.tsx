@@ -1,13 +1,15 @@
 "use client"
 
 import { useSearchParams } from "next/navigation"
-import { cancelBooking } from "@/app/actions/booking-actions"
+import { cancelBooking } from "@/lib/firebase/database"
 import { BrandCard } from "@/components/ui/brand-card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, Users, MessageSquare, CheckCircle, XCircle, Clock, Ban, Loader2 } from "lucide-react"
 import { format } from "date-fns"
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { onAuthStateChange } from "@/lib/firebase/auth"
+import { User as FirebaseUser } from "firebase/auth"
 
 interface Booking {
   id: string
@@ -29,13 +31,25 @@ interface MyTripsClientProps {
   initialBookings: Booking[]
 }
 
-function CancelButton({ bookingId }: { bookingId: string }) {
+function CancelButton({ bookingId, userId }: { bookingId: string; userId: string }) {
   const [isCancelling, setIsCancelling] = useState(false)
 
   const handleCancel = async () => {
+    if (!userId) {
+      console.error('No user ID available')
+      return
+    }
+    
     setIsCancelling(true)
     try {
-      await cancelBooking(bookingId)
+      const result = await cancelBooking(bookingId, userId)
+      if (result.error) {
+        console.error('Error cancelling booking:', result.error)
+        // You could add a toast notification here
+      } else {
+        // Refresh the page to show updated status
+        window.location.reload()
+      }
     } catch (error) {
       console.error('Error cancelling booking:', error)
     } finally {
@@ -65,10 +79,19 @@ function CancelButton({ bookingId }: { bookingId: string }) {
 }
 
 export default function MyTripsClient({ initialBookings }: MyTripsClientProps) {
+  const [user, setUser] = useState<FirebaseUser | null>(null)
   const searchParams = useSearchParams()
 
   const showSuccess = searchParams.get("success") === "true"
   const newBookingId = searchParams.get("booking")
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChange((user) => {
+      setUser(user)
+    })
+
+    return () => unsubscribe()
+  }, [])
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -161,60 +184,32 @@ export default function MyTripsClient({ initialBookings }: MyTripsClientProps) {
                       </Badge>
                     </div>
 
-                    {/* Booking Details */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-fos-neutral-deep">
-                          <Calendar className="h-4 w-4" />
-                          <span className="font-medium">Dates</span>
-                        </div>
-                        <p className="text-fos-neutral">
-                          {format(startDate, "MMM dd")} - {format(endDate, "MMM dd, yyyy")}
-                        </p>
-                        <p className="text-sm text-fos-neutral">{nights} nights</p>
+                    {/* Dates and Guests */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="flex items-center gap-2 text-sm text-fos-neutral">
+                        <Calendar className="h-4 w-4" />
+                        <span>
+                          {format(startDate, "MMM dd")} - {format(endDate, "MMM dd, yyyy")} ({nights} nights)
+                        </span>
                       </div>
-
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 text-fos-neutral-deep">
-                          <Users className="h-4 w-4" />
-                          <span className="font-medium">Guests</span>
-                        </div>
-                        <p className="text-fos-neutral">{booking.guests} guests</p>
+                      <div className="flex items-center gap-2 text-sm text-fos-neutral">
+                        <Users className="h-4 w-4" />
+                        <span>{booking.guests} guest{booking.guests !== 1 ? "s" : ""}</span>
                       </div>
-
-                      {booking.notes && (
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-fos-neutral-deep">
-                            <MessageSquare className="h-4 w-4" />
-                            <span className="font-medium">Notes</span>
-                          </div>
-                          <p className="text-sm text-fos-neutral">{booking.notes}</p>
-                        </div>
-                      )}
                     </div>
 
+                    {/* Notes */}
+                    {booking.notes && (
+                      <div className="flex items-start gap-2 text-sm text-fos-neutral">
+                        <MessageSquare className="h-4 w-4 mt-0.5" />
+                        <span>{booking.notes}</span>
+                      </div>
+                    )}
+
                     {/* Actions */}
-                    {booking.status === "pending" && (
-                      <div className="flex gap-2 pt-2 border-t border-fos-neutral-light">
-                        <CancelButton bookingId={booking.id} />
-                      </div>
-                    )}
-
-                    {booking.status === "approved" && (
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                        <p className="text-sm text-green-700">
-                          <strong>Confirmed!</strong> Your booking has been approved. Check your email for details and
-                          check-in instructions.
-                        </p>
-                      </div>
-                    )}
-
-                    {booking.status === "denied" && (
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                        <p className="text-sm text-red-700">
-                          Unfortunately, your booking request was not approved. Please try different dates or contact
-                          the property owner.
-                        </p>
+                    {booking.status === "pending" && user && (
+                      <div className="flex justify-end">
+                        <CancelButton bookingId={booking.id} userId={user.uid} />
                       </div>
                     )}
                   </div>

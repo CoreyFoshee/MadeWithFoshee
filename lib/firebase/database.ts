@@ -10,7 +10,8 @@ import {
   addDoc, 
   updateDoc,
   deleteDoc,
-  Timestamp 
+  Timestamp,
+  getFirestore
 } from 'firebase/firestore'
 
 interface ContentBlock {
@@ -362,5 +363,85 @@ export async function getSiteSettings() {
   } catch (error) {
     console.error('Error fetching site settings:', error)
     return []
+  }
+}
+
+export async function cancelBooking(bookingId: string, userId: string) {
+  try {
+    const db = getFirestore()
+    
+    // Get the booking to verify ownership
+    const bookingRef = doc(db, 'bookings', bookingId)
+    const bookingSnap = await getDoc(bookingRef)
+    
+    if (!bookingSnap.exists()) {
+      return { error: 'Booking not found' }
+    }
+    
+    const bookingData = bookingSnap.data()
+    
+    // Users can only cancel their own bookings
+    if (bookingData.user_id !== userId) {
+      return { error: 'You can only cancel your own bookings' }
+    }
+    
+    // Update the booking status to cancelled
+    await updateDoc(bookingRef, {
+      status: 'cancelled',
+      updated_at: new Date()
+    })
+    
+    return { success: true }
+  } catch (error) {
+    console.error('Error cancelling booking:', error)
+    return { error: error instanceof Error ? error.message : 'Failed to cancel booking' }
+  }
+}
+
+export async function approveBooking(bookingId: string, userId: string) {
+  try {
+    // Check if user has admin privileges
+    const userProfile = await getUserProfile(userId)
+    if (!userProfile || (userProfile.role !== 'admin' && userProfile.role !== 'owner')) {
+      return { error: 'Permission denied: Admin access required' }
+    }
+    
+    const db = getFirestore()
+    const bookingRef = doc(db, 'bookings', bookingId)
+    
+    // Update the booking status to approved
+    await updateDoc(bookingRef, {
+      status: 'approved',
+      updated_at: new Date()
+    })
+    
+    return { success: true }
+  } catch (error) {
+    console.error('Error approving booking:', error)
+    return { error: error instanceof Error ? error.message : 'Failed to approve booking' }
+  }
+}
+
+export async function denyBooking(bookingId: string, userId: string) {
+  try {
+    // Check if user has admin privileges
+    const userProfile = await getUserProfile(userId)
+    if (!userProfile || (userProfile.role !== 'admin' && userProfile.role !== 'owner')) {
+      return { error: 'Permission denied: Admin access required' }
+    }
+    
+    const db = getFirestore()
+    const bookingRef = doc(db, 'bookings', bookingId)
+    
+    // Update the booking status to denied
+    await updateDoc(bookingRef, {
+      status: 'denied',
+      updated_at: new Date()
+    })
+    
+    return { success: true }
+  } catch (error) {
+    console.error('Error denying booking:', error)
+    return { error: error instanceof Error ? error.message : 'Failed to deny booking' }
   }
 }
