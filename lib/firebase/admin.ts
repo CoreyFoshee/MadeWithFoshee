@@ -5,6 +5,13 @@ let adminApp: App | null = null
 let adminDbInstance: Firestore | null = null
 
 function initializeAdmin() {
+  // Check if app already exists
+  const existingApps = getApps()
+  if (existingApps.length > 0) {
+    adminApp = existingApps[0]
+    return adminApp
+  }
+
   if (adminApp) return adminApp
 
   // Check if we're in production (Vercel) or development
