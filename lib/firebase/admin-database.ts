@@ -149,6 +149,7 @@ export async function createOrUpdateUserProfile(userId: string, profileData: {
   first_name: string
   last_name: string
   email: string
+  role?: string
 }) {
   try {
     const adminDb = getAdminDb()
@@ -170,7 +171,9 @@ export async function createOrUpdateUserProfile(userId: string, profileData: {
       // If updating from old format, remove old fields
       if (existingData.full_name) {
         updateData.full_name = adminDb.FieldValue.delete()
-        updateData.role = adminDb.FieldValue.delete()
+        if (existingData.role && !profileData.role) {
+          updateData.role = adminDb.FieldValue.delete()
+        }
       }
       
       await adminDb.collection('profiles').doc(profileDoc.id).update(updateData)
@@ -178,17 +181,103 @@ export async function createOrUpdateUserProfile(userId: string, profileData: {
       return { success: true, message: 'Profile updated successfully' }
     } else {
       // Create new profile
-      await adminDb.collection('profiles').add({
+      const newProfileData: any = {
         user_id: userId,
         ...profileData,
         created_at: new Date(),
         updated_at: new Date()
-      })
+      }
+      
+      // Set default role if not specified
+      if (!newProfileData.role) {
+        newProfileData.role = 'family'
+      }
+      
+      await adminDb.collection('profiles').add(newProfileData)
       console.log(`✅ Created profile for user: ${userId}`)
       return { success: true, message: 'Profile created successfully' }
     }
   } catch (error) {
     console.error('Error creating/updating user profile:', error)
     throw error
+  }
+}
+
+export async function checkAdminPrivileges(userId: string): Promise<boolean> {
+  try {
+    const adminDb = getAdminDb()
+    
+    // Check if user has admin role in profiles collection
+    const profileQuery = await adminDb.collection('profiles').where('user_id', '==', userId).get()
+    
+    if (!profileQuery.empty) {
+      const profile = profileQuery.docs[0].data()
+      return profile.role === 'admin' || profile.role === 'owner'
+    }
+    
+    return false
+  } catch (error) {
+    console.error('Error checking admin privileges:', error)
+    return false
+  }
+}
+
+export async function grantAdminRole(userId: string, adminUserId: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const adminDb = getAdminDb()
+    
+    // First, verify the requesting user is an admin
+    const isAdmin = await checkAdminPrivileges(adminUserId)
+    if (!isAdmin) {
+      return { success: false, message: 'Permission denied: Only admins can grant admin roles' }
+    }
+    
+    // Update the user's profile to include admin role
+    const profileQuery = await adminDb.collection('profiles').where('user_id', '==', userId).get()
+    
+    if (profileQuery.empty) {
+      return { success: false, message: 'User profile not found' }
+    }
+    
+    const profileDoc = profileQuery.docs[0]
+    await profileDoc.ref.update({
+      role: 'admin',
+      updated_at: new Date()
+    })
+    
+    return { success: true, message: 'Admin role granted successfully' }
+  } catch (error) {
+    console.error('Error granting admin role:', error)
+    return { success: false, message: error instanceof Error ? error.message : 'Unknown error occurred' }
+  }
+}
+
+export async function revokeAdminRole(userId: string, adminUserId: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const adminDb = getAdminDb()
+    
+    // First, verify the requesting user is an admin
+    const isAdmin = await checkAdminPrivileges(adminUserId)
+    if (!isAdmin) {
+      return { success: false, message: 'Permission denied: Only admins can revoke admin roles' }
+    }
+    
+    // Update the user's profile to remove admin role
+    const profileQuery = await adminDb.collection('profiles').where('user_id', '==', userId).get()
+    
+    if (profileQuery.empty) {
+      return { success: false, message: 'User profile not found' }
+    }
+    
+    const profileDoc = profileQuery.docs[0]
+    await profileDoc.ref.update({
+      role: 'family', // Default to family role
+      updated_at: new Date()
+    })
+    
+    return { success: true, message: 'Admin role revoked successfully' }
+  } catch (error) {
+    console.error('Error revoking admin role:', error)
+    return { success: false, message: error instanceof Error ? error.message : 'Unknown error occurred' }
   }
 }

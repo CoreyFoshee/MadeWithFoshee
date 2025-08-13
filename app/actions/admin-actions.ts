@@ -2,19 +2,19 @@
 
 import { revalidatePath } from "next/cache"
 import { getAdminDb } from "@/lib/firebase/admin"
+import { checkAdminPrivileges } from "@/lib/firebase/admin-database"
 
-// Check if user is owner (simplified for now - you can add proper auth later)
-async function checkOwnerPermission() {
-  // For now, allow all authenticated users to be admin
-  // In production, you'd check Firebase Auth and user roles
-  return true
+// Check if user has admin privileges
+async function checkOwnerPermission(userId: string) {
+  if (!userId) return false
+  return await checkAdminPrivileges(userId)
 }
 
-export async function approveBooking(bookingId: string) {
+export async function approveBooking(bookingId: string, userId: string) {
   try {
-    const hasPermission = await checkOwnerPermission()
+    const hasPermission = await checkOwnerPermission(userId)
     if (!hasPermission) {
-      return { error: "Permission denied" }
+      return { error: "Permission denied: Admin access required" }
     }
 
     const adminDb = getAdminDb()
@@ -33,11 +33,11 @@ export async function approveBooking(bookingId: string) {
   }
 }
 
-export async function denyBooking(bookingId: string) {
+export async function denyBooking(bookingId: string, userId: string) {
   try {
-    const hasPermission = await checkOwnerPermission()
+    const hasPermission = await checkOwnerPermission(userId)
     if (!hasPermission) {
-      return { error: "Permission denied" }
+      return { error: "Permission denied: Admin access required" }
     }
 
     const adminDb = getAdminDb()
@@ -56,11 +56,11 @@ export async function denyBooking(bookingId: string) {
   }
 }
 
-export async function createBlackout(prevState: any, formData: FormData) {
+export async function createBlackout(prevState: any, formData: FormData, userId: string) {
   try {
-    const hasPermission = await checkOwnerPermission()
+    const hasPermission = await checkOwnerPermission(userId)
     if (!hasPermission) {
-      return { error: "Permission denied" }
+      return { error: "Permission denied: Admin access required" }
     }
 
     const adminDb = getAdminDb()
@@ -91,15 +91,16 @@ export async function createBlackout(prevState: any, formData: FormData) {
   }
 }
 
-export async function deleteBlackout(blackoutId: string) {
+export async function deleteBlackout(blackoutId: string, userId: string) {
   try {
-    const hasPermission = await checkOwnerPermission()
+    const hasPermission = await checkOwnerPermission(userId)
     if (!hasPermission) {
-      return { error: "Permission denied" }
+      return { error: "Permission denied: Admin access required" }
     }
 
     const adminDb = getAdminDb()
     
+    // Delete the blackout date
     await adminDb.collection('blackout_dates').doc(blackoutId).delete()
 
     revalidatePath("/admin")
