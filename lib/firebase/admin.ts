@@ -5,13 +5,14 @@ let adminApp: App | null = null
 let adminDbInstance: Firestore | null = null
 
 function initializeAdmin() {
-  // Check if app already exists
+  // Check if app already exists and return it
   const existingApps = getApps()
   if (existingApps.length > 0) {
     adminApp = existingApps[0]
     return adminApp
   }
 
+  // If we already have an adminApp instance, return it
   if (adminApp) return adminApp
 
   // Check if we're in production (Vercel) or development
@@ -72,18 +73,17 @@ function initializeAdmin() {
   return adminApp
 }
 
-// Get Firestore instance (lazy initialization)
+export function getAdminApp(): App {
+  if (!adminApp) {
+    adminApp = initializeAdmin()
+  }
+  return adminApp
+}
+
 export function getAdminDb(): Firestore {
   if (!adminDbInstance) {
-    const app = initializeAdmin()
+    const app = getAdminApp()
     adminDbInstance = getFirestore(app)
   }
   return adminDbInstance
 }
-
-// Get Admin App (lazy initialization)
-export function getAdminApp(): App {
-  return initializeAdmin()
-}
-
-export default { getAdminApp, getAdminDb }
