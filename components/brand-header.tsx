@@ -7,27 +7,56 @@ import { signOutUser, onAuthStateChange } from "@/lib/firebase/auth"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { User as FirebaseUser } from "firebase/auth"
+import { getUserProfile } from "@/lib/firebase/database"
 
 interface BrandHeaderProps {
   className?: string
 }
 
+interface UserProfile {
+  first_name: string
+  last_name: string
+  email: string
+}
+
 export default function BrandHeader({ className = "" }: BrandHeaderProps) {
   const [user, setUser] = useState<FirebaseUser | null>(null)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const router = useRouter()
 
   useEffect(() => {
     const unsubscribe = onAuthStateChange((user) => {
       setUser(user)
+      if (user) {
+        // Fetch user profile when user is authenticated
+        fetchUserProfile(user.uid)
+      } else {
+        setUserProfile(null)
+      }
     })
 
     return () => unsubscribe()
   }, [])
 
+  const fetchUserProfile = async (userId: string) => {
+    try {
+      const profile = await getUserProfile(userId)
+      if (profile) {
+        setUserProfile(profile)
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error)
+    }
+  }
+
   const handleSignOut = async () => {
     await signOutUser()
     router.push('/auth/login')
   }
+
+  const displayName = userProfile 
+    ? `${userProfile.first_name} ${userProfile.last_name}`
+    : user?.email || 'User'
 
   return (
     <header className={`bg-white border-b border-fos-neutral-light ${className}`}>
@@ -53,7 +82,7 @@ export default function BrandHeader({ className = "" }: BrandHeaderProps) {
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2 text-sm text-gray-600">
                 <User className="h-4 w-4" />
-                <span>{user.email}</span>
+                <span>{displayName}</span>
               </div>
               <Button
                 onClick={handleSignOut}
