@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { BrandCard } from "@/components/ui/brand-card"
 import { Button } from "@/components/ui/button"
@@ -9,7 +9,10 @@ import { Label } from "@/components/ui/label"
 import { Loader2, CheckCircle, XCircle, Mail } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
-export default function AcceptInvitePage() {
+// Force dynamic rendering to prevent static generation errors
+export const dynamic = 'force-dynamic'
+
+function AcceptInviteContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
@@ -228,5 +231,20 @@ export default function AcceptInvitePage() {
         </div>
       </BrandCard>
     </div>
+  )
+}
+
+export default function AcceptInvitePage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-fos-neutral-light">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-fos-primary mx-auto mb-4" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <AcceptInviteContent />
+    </Suspense>
   )
 }

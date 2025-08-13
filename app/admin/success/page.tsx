@@ -1,14 +1,17 @@
 "use client"
 
 import { useSearchParams } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import BrandHeader from '@/components/brand-header'
 import { BrandCard } from '@/components/ui/brand-card'
 import { Button } from '@/components/ui/button'
 import { CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
 
-export default function AdminSuccessPage() {
+// Force dynamic rendering to prevent static generation errors
+export const dynamic = 'force-dynamic'
+
+function AdminSuccessContent() {
   const searchParams = useSearchParams()
   const [status, setStatus] = useState<string>('')
   const [bookingId, setBookingId] = useState<string>('')
@@ -105,5 +108,25 @@ export default function AdminSuccessPage() {
         </BrandCard>
       </div>
     </div>
+  )
+}
+
+export default function AdminSuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-fos-neutral-light">
+        <BrandHeader />
+        <div className="max-w-2xl mx-auto px-4 py-8">
+          <BrandCard>
+            <div className="text-center space-y-4">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-fos-primary mx-auto"></div>
+              <p className="text-fos-neutral">Loading...</p>
+            </div>
+          </BrandCard>
+        </div>
+      </div>
+    }>
+      <AdminSuccessContent />
+    </Suspense>
   )
 }
