@@ -79,12 +79,14 @@ export default function PlacePage() {
   // Combine and process dates
   const unavailableDates: Date[] = []
   
-  // Add booking dates
+  // Add only APPROVED booking dates (cancelled bookings don't block dates)
   bookings?.forEach((booking) => {
-    const start = new Date(booking.start_date)
-    const end = new Date(booking.end_date)
-    for (let d = start; d < end; d.setDate(d.getDate() + 1)) {
-      unavailableDates.push(new Date(d))
+    if (booking.status === 'approved') {
+      const start = new Date(booking.start_date)
+      const end = new Date(booking.end_date)
+      for (let d = start; d < end; d.setDate(d.getDate() + 1)) {
+        unavailableDates.push(new Date(d))
+      }
     }
   })
 
